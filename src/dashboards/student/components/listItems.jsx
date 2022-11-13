@@ -10,9 +10,9 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LayersIcon from '@mui/icons-material/Layers';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import { useNavigate } from 'react-router-dom';
-import { Person,BarChart,Layers,Notifications } from '@mui/icons-material';
+import { Person,BarChart,Layers,Notifications,School } from '@mui/icons-material';
 
-export const MainListItems =({setCurrentPage})=> { 
+export const MainListItems =({setCurrentPage,userDetails})=> { 
   const navigate = useNavigate()
   return(
   <React.Fragment>
@@ -35,13 +35,13 @@ export const MainListItems =({setCurrentPage})=> {
       <ListItemText primary="Profile"  />
     </ListItemButton>
     <ListItemButton onClick={()=>{
-        setCurrentPage('Absentess')
+        setCurrentPage('Absencess')
         navigate('absentees')
       }}>
       <ListItemIcon>
       <AssignmentIcon />
       </ListItemIcon>
-      <ListItemText primary="Absentees" />
+      <ListItemText primary="Absences" />
     </ListItemButton>
     <ListItemButton onClick={()=>{
         setCurrentPage('Notifcations')
@@ -52,6 +52,17 @@ export const MainListItems =({setCurrentPage})=> {
       </ListItemIcon>
       <ListItemText primary="Notifciations" />
     </ListItemButton>
+    { userDetails && userDetails.role === 'Class-rep' &&
+      <ListItemButton onClick={()=>{
+          setCurrentPage('Class Rep')
+          navigate('classrep')
+        }}>
+        <ListItemIcon>
+          <School/>
+        </ListItemIcon>
+        <ListItemText primary="Class Rep" />
+      </ListItemButton>
+    }
   </React.Fragment>
 );}
 

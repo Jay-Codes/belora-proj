@@ -7,7 +7,10 @@ import ServiceDetails from './components/ServiceDetails';
 import SchoolDetails from './components/SchoolDetails'
 import SemesterDetails from './components/SemesterDetails'
 import TimeTableDetails from './components/TimeTableDetails'
-const Profile = () => {
+import { useState } from 'react'
+const Profile = ({app,currentUser}) => {
+  const [loginComplete,setLoginComplete] = useState()
+  const [schoolDetails, setSchoolDetails] = useState()
   return (
     <Grid container spacing={3}>
       {/* Login Details */}
@@ -20,37 +23,22 @@ const Profile = () => {
             // height: 240,
           }}
         >
-          <LoginDetails />
+          <LoginDetails app={app} currentUser={currentUser} setLoginComplete={setLoginComplete}/>
         </Paper>
       </Grid>
-      {/* Recent Deposits
-      <Grid item xs={12} md={4} lg={3}>
-        <Paper
-          sx={{
-            p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            height: 240,
-          }}
-        >
-          <Deposits />
+      <Grid item xs={12} md={8} lg={9} >
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <SchoolDetails app={app}  currentUser={currentUser} setSchoolDetailsComplete={setSchoolDetails}/>
+        </Paper>
+      </Grid>
+      {/* <Grid item xs={12} md={8} lg={9} >
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+          <SemesterDetails app={app}  currentUser={currentUser} />
         </Paper>
       </Grid> */}
-      {/* Recent Orders */}
-      
       <Grid item xs={12} md={8} lg={9} >
         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-          <SchoolDetails/>
-        </Paper>
-      </Grid>
-      <Grid item xs={12} md={8} lg={9} >
-        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-          <SemesterDetails/>
-        </Paper>
-      </Grid>
-      <Grid item xs={12} md={8} lg={9} >
-        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-          <TimeTableDetails/>
+          <TimeTableDetails app={app}  currentUser={currentUser} />
         </Paper>
       </Grid>
     </Grid>

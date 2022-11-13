@@ -1,18 +1,48 @@
 import React from 'react'
 import Title from './Title'
 import { Container, CssBaseline, Grid, Link, Checkbox, Button, Box,TextField, FormControlLabel } from '@mui/material';
+import { doc, updateDoc } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
+import { getDoc } from "firebase/firestore";
+import { useNavigate } from 'react-router-dom'
 
 
 
-const handleSubmit = (event) =>{
+const LoginDetails = ({app,currentUser,userDetails,setUserDetails : commitUpdates,setLoginComplete}) => {
+  const [ loginDetails ,setUserDetails] = React.useState(userDetails ? {...userDetails}: {email:'',phone:''})
+  React.useEffect(()=>{
+    if(!loginDetails && userDetails)
+      setUserDetails(userDetails)
+    if(loginDetails && userDetails &&userDetails.email !== loginDetails.email && loginDetails.email==='')
+      setUserDetails(userDetails)
+  },[userDetails])
+  const db = getFirestore(app);
+  function handleEmailChange(e){
+    setUserDetails({...loginDetails,email:e.target.value})
+  }
+  function handlePasswordChange(e){
+    setUserDetails({...loginDetails,email:e.target.value})
+  }
+  function handlePhoneChange(e){
+    setUserDetails({...loginDetails,phone:e.target.value})
+  }
+  const handleSubmit = async (event) =>{
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    const useRef = doc(db, "Users", currentUser.uid);
+
+    // Set the "capital" field of the city 'DC'
+    await updateDoc(useRef,loginDetails);
+    setLoginComplete(true)
+    const docRef = doc(db, "Users", currentUser.uid);
+
+        getDoc(docRef).then(docSnap => {
+          if (docSnap.exists()) {
+            commitUpdates(docSnap.data())
+          } else {
+            console.log("No such document!");
+          }
+        })
 }
-const LoginDetails = () => {
   return (
     <div>
         <Container component="main" >
@@ -30,6 +60,8 @@ const LoginDetails = () => {
                       type='email'
                       autoComplete="email"
                       autoFocus
+                      value ={loginDetails ? loginDetails.email : ' '}
+                      onChange={handleEmailChange}
                     />
                 </Grid>
 
@@ -43,6 +75,7 @@ const LoginDetails = () => {
                       type="password"
                       id="password"
                       autoComplete="current-password"
+                      onChange={handlePasswordChange}
                     />
                 </Grid>
                 <Grid item xs={12} md={8} lg={6}>
@@ -55,18 +88,8 @@ const LoginDetails = () => {
                       name="tel"
                       autoComplete="tell"
                       autoFocus
-                    />
-                </Grid>
-                <Grid item xs={12} md={8} lg={6}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="username"
-                      label="Username"
-                      name="username"
-                      autoComplete="username"
-                      autoFocus
+                      value ={loginDetails ? loginDetails.phone : ' '}
+                      onChange={handlePhoneChange}
                     />
                 </Grid>
                 <Grid item xs={12} md={8} lg={6}>

@@ -1,8 +1,8 @@
 import React from 'react'
 import Chart from '../components/Chart';
-import Deposits from '../components/Deposits';
 import Orders from '../components/Orders';
 import { Grid,Paper  } from '@mui/material'
+import GenerateQRCode from './components/GenerateQRCode'
 
 const Dashboard = () => {
   return (
@@ -30,7 +30,8 @@ const Dashboard = () => {
                     height: 240,
                   }}
                 >
-                  <Deposits />
+                  {/* <Deposits /> */}
+                  <GenerateQRCode/>
                 </Paper>
               </Grid>
               {/* Recent Orders */}

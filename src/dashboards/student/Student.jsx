@@ -16,10 +16,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { MainListItems } from './components/listItems';
-import { Dashboard as Home, Profile } from './pages'
-import { Route,Routes } from 'react-router-dom'
-import { useState } from 'react'
-
+import { Dashboard as Home, Profile, ClassRep } from './pages'
+import { Route,Routes, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 function Copyright(props) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -78,15 +80,64 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     },
   }),
 );
+let alertCount  = 0;
 
 const mdTheme = createTheme();
 
-function DashboardContent() {
+function DashboardContent({app}) {
   const [open, setOpen] = React.useState(true);
+  const [registrationStatus , setRegistrationStatus] = React.useState(true)
+  const [currentUser ,setCurrentUser] = useState(null)
+  const [currentPage,setCurrentPage] = useState('Dashboard')
+  const [userDetails,setUserDetails ] = useState()
+
+  const navigate = useNavigate()
   const toggleDrawer = () => {
     setOpen(!open);
   };
-  const [currentPage,setCurrentPage] = useState('Dashboard')
+  const auth = getAuth();
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User is signed in, see docs for a list of available properties
+      // https://firebase.google.com/docs/reference/js/firebase.User
+      if(currentUser===null)setCurrentUser(user)
+      const uid = user.uid;
+      
+      // ...
+    } else {
+      // User is signed out
+      // ...
+    }
+  });
+  useEffect(()=>{
+    if(currentUser===null)return
+    (async function init(){
+      const db = getFirestore(app);
+      const docRef = doc(db, "Users",currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      if(docSnap.data.role==='Lecturer')
+        navigate('/Lecturer')
+
+      if (docSnap.exists()) {
+        setUserDetails(docSnap.data())
+      } else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+      }
+    })();
+  },[currentUser])
+
+  useEffect(()=>{
+    console.log(userDetails)
+    if (!registrationStatus && alertCount < 1 ){ 
+      alert('You need to Complete the registration Process in Profile');
+      alertCount++
+    }
+    if (window.location.pathname.substring(window.location.pathname.indexOf('/profile')+1) !=='profile' && !registrationStatus){
+      navigate('profile')
+      // console.log('woah')
+    }
+  })
 
   return (
     <ThemeProvider theme={mdTheme}>
@@ -141,7 +192,7 @@ function DashboardContent() {
           </Toolbar>
           <Divider />
           <List component="nav">
-            <MainListItems setCurrentPage={setCurrentPage}/>
+            <MainListItems setCurrentPage={setCurrentPage} userDetails ={userDetails}/>
           </List>
         </Drawer>
         <Box
@@ -160,13 +211,16 @@ function DashboardContent() {
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
 
             <Routes>
-              <Route path='/' element={<Home/>}/>
-              <Route path='profile' element={<Profile/>}/>
+              <Route path='/' element={<Home app={app} currentUser={currentUser}/>}/>
+              <Route path='profile' element={<Profile app={app} currentUser={currentUser}/>}/>
+              <Route path='classrep' element={<ClassRep app={app} currentUser={currentUser}/>}/>
             </Routes>
+
             <Copyright sx={{ pt: 4 }} />
           </Container>
         </Box>
       </Box>
+      {/* {handleRegistration()} */}
     </ThemeProvider>
   );
 }

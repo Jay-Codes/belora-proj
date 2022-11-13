@@ -17,8 +17,11 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { MainListItems } from './components/listItems';
 import { Dashboard as Home, Profile , Attendance } from './pages'
-import { Route,Routes } from 'react-router-dom'
-import { useState } from 'react'
+import { Route,Routes, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
 
 
@@ -82,14 +85,66 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 );
 
 const mdTheme = createTheme();
-
-function DashboardContent() {
+let alertCount  = 0;
+let logged = true;
+function DashboardContent({app}) {
   const [open, setOpen] = React.useState(true);
+  const [registrationStatus , setRegistrationStatus] = React.useState(true)
+  const [userDetails,setUserDetails ] = useState()
+  const [loggedUser,setCurrentUser] = useState(null)
   const toggleDrawer = () => {
     setOpen(!open);
   };
   const [currentPage,setCurrentPage] = useState('Dashboard')
+  const navigate = useNavigate()
+  const auth = getAuth();
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User is signed in, see docs for a list of available properties
+      // https://firebase.google.com/docs/reference/js/firebase.User
+      if(loggedUser===null)setCurrentUser(user)
+      const uid = user.uid;
+      // ...
+    } else {
+      // User is signed out
+      // ...
+      logged=false;
+    }
+  });
+  useEffect(()=>{
+    if(!logged)
+      navigate('/login')
+  },[loggedUser])
+  useEffect(()=>{
+    if(loggedUser===null)return
+    (async function init(){
+      const db = getFirestore(app);
+      const docRef = doc(db, "Users",loggedUser.uid);
+      const docSnap = await getDoc(docRef);
+      if(docSnap.data().role!=='Lecturer'){
+        navigate('/Student')
+      }
+        
 
+      if (docSnap.exists()) {
+        setUserDetails(docSnap.data())
+      } else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+      }
+    })();
+  },[loggedUser])
+
+  useEffect(()=>{
+    if (!registrationStatus && alertCount < 1 ){ 
+      alert('You need to Complete the registration Process in Profile');
+      alertCount++
+    }
+    if (window.location.pathname.substring(window.location.pathname.indexOf('/profile')+1) !=='profile' && !registrationStatus){
+      navigate('profile')
+      // console.log('woah')
+    }
+  })
   return (
     <ThemeProvider theme={mdTheme}>
       <Box sx={{ display: 'flex' }}>
@@ -162,9 +217,9 @@ function DashboardContent() {
           <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
 
             <Routes> 
-              <Route path='/' element={<Home/>}/>
-              <Route path='profile' element={<Profile/>}/>
-              <Route path='attendance' element={<Attendance/>}/>
+              <Route path='/' element={<Home app={app} currentUser={loggedUser}/>}/>
+              <Route path='profile' element={<Profile app={app} currentUser={loggedUser} userDetails={userDetails} setUserDetails={setUserDetails}/>}/>
+              <Route path='attendance' element={<Attendance app={app} currentUser={loggedUser}/>}/>
             </Routes>
             <Copyright sx={{ pt: 4 }} />
           </Container>

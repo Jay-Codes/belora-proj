@@ -1,10 +1,13 @@
 import * as React from 'react';
+import { useState } from 'react'
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
@@ -12,6 +15,12 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { getAuth, createUserWithEmailAndPassword, setPersistence, signInWithEmailAndPassword, browserSessionPersistence } from "firebase/auth";
+import { useNavigate } from 'react-router-dom'
+import { doc, collection, addDoc, setDoc } from "firebase/firestore"; 
+import { getFirestore } from "firebase/firestore";
+
+
 
 function Copyright(props) {
   return (
@@ -28,14 +37,59 @@ function Copyright(props) {
 
 const theme = createTheme();
 
-export default function SignUp() {
+export default function SignUp({app,setCurrentUser}) {
+  const [ accountType, setAccountType ] = useState('Student')
+  const navigate = useNavigate();
+  const db = getFirestore(app);
+
+  function handleChange(e){
+    setAccountType(e.target.value)
+  }
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+
+    const email = data.get('email');
+    const password = data.get('password')
+    const auth = getAuth(app);
+
+    function sessionPersist(){
+        setPersistence(auth, browserSessionPersistence)
+          .then(() => {
+            return signInWithEmailAndPassword(auth, email, password);
+          })
+          .catch((error) => {
+            // Handle Errors here.
+            const errorCode = error.code;
+            const errorMessage = error.message;
+          });
+    }
+    
+    createUserWithEmailAndPassword(auth, email, password)
+      .then( async (userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        sessionPersist()
+        // const docRef = await addDoc(collection(db, "Users"), {
+        //   email:email,
+        //   role:accountType
+        // });
+        
+        await setDoc(doc(db, "Users", user.uid), {
+          mail:email,
+          role:accountType
+        });
+        setCurrentUser ({email:email,role:accountType,uid:user.uid})
+        navigate(`/${accountType}/profile`)
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert(`failed to create account with this email address\n${errorMessage}`)
+        // ..
+      });
+    
   };
 
   return (
@@ -56,46 +110,17 @@ export default function SignUp() {
           <Typography component="h1" variant="h5">
             Sign up
           </Typography>
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
+          <Box component="form"  onSubmit={handleSubmit} sx={{ mt: 3 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  autoComplete="given-name"
-                  name="firstName"
-                  required
-                  fullWidth
-                  id="firstName"
-                  label="First Name"
-                  autoFocus
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  required
-                  fullWidth
-                  id="lastName"
-                  label="Last Name"
-                  name="lastName"
-                  autoComplete="family-name"
-                />
-              </Grid>
               <Grid item xs={12}>
                 <TextField
                   required
                   fullWidth
                   id="email"
+                  type='email'
                   label="Email Address"
                   name="email"
                   autoComplete="email"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  id="schoolid"
-                  label="School ID"
-                  name="school id"
                 />
               </Grid>
               <Grid item xs={12}>
@@ -110,10 +135,22 @@ export default function SignUp() {
                 />
               </Grid>
               <Grid item xs={12}>
-                {/* <FormControlLabel
-                  control={<Checkbox value="allowExtraEmails" color="primary" />}
-                  label="I want to receive inspiration, marketing promotions and updates via email."
-                /> */}
+                <FormControl fullWidth>
+                  <InputLabel id="account-type">Registering As</InputLabel>
+                  <Select
+                    labelId="account-type-label"
+                    id="account-type-select"
+                    value={accountType}
+                    label="Registering As"
+                    onChange={handleChange}
+                  >
+                    <MenuItem value={'Student'}>Student</MenuItem>
+                    <MenuItem value={'Lecturer'}>Lecturer</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+               <Grid item xs={12}>
+                <Typography  color="text.secondary">You are registering as a <b>{accountType}</b></Typography>
               </Grid>
             </Grid>
             <Button

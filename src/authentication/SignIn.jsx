@@ -12,6 +12,12 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { getAuth, setPersistence, signInWithEmailAndPassword, browserSessionPersistence } from "firebase/auth";
+import { useNavigate } from 'react-router-dom'
+import { doc, collection, query, where, getDocs } from "firebase/firestore"; 
+import { getFirestore } from "firebase/firestore";
+
+
 
 function Copyright(props) {
   return (
@@ -28,14 +34,52 @@ function Copyright(props) {
 
 const theme = createTheme();
 
-export default function SignIn() {
+export default function SignIn({app,setCurrentUser}) {
+  const navigate = useNavigate()
+  const db = getFirestore(app);
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    const auth = getAuth();
+    const email= data.get('email')
+    const password= data.get('password')
+    function sessionPersist(){
+      setPersistence(auth, browserSessionPersistence)
+        .then(() => {
+          return signInWithEmailAndPassword(auth, email, password);
+        })
+        .catch((error) => {
+          // Handle Errors here.
+          const errorCode = error.code;
+          const errorMessage = error.message;
+        });
+    }
+    console.log('woah')
+    signInWithEmailAndPassword(auth, email, password)
+      .then(async (userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        console.log(user)
+        sessionPersist()
+        const usersRef = collection(db, "Users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+        let data = {}
+        querySnapshot.forEach((doc) => {
+          data = doc.data()
+        });
+        const accountType = data.role === 'Class-rep' | data.role === 'Student' ? 'Student' : 'Lecturer'
+        setCurrentUser({...data,user_id:doc.id,uid:user.uid})
+        console.log(data)
+        navigate(`/${accountType}`)
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert(`Failed to sign in\nIncorrect Credentials\n${errorMessage}`)
+      });
   };
 
   return (
@@ -77,10 +121,10 @@ export default function SignIn() {
               id="password"
               autoComplete="current-password"
             />
-            <FormControlLabel
+            {/* <FormControlLabel
               control={<Checkbox value="remember" color="primary" />}
               label="Remember me"
-            />
+            /> */}
             <Button
               type="submit"
               fullWidth
